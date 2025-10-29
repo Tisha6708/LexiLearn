@@ -8,7 +8,7 @@ import ReadingPractice from "./pages/ReadingPractice";
 import AccessibilityToolbar from "./components/AccessibilityToolbar";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import ParentDashboard from "./pages/ParentDashboard";
-
+import Footer from "./components/Footer";
 export default function App() {
   return (
     <Router>
@@ -23,6 +23,7 @@ export default function App() {
         <Route path="/parent-dashboard" element={<ParentDashboard />} />
       </Routes>
       <AccessibilityToolbar />
+      <Footer />
     </Router>
   );
 }
