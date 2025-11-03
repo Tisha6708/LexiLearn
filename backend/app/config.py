@@ -1,9 +1,9 @@
-import os
-from dotenv import load_dotenv
+from pydantic_settings import BaseSettings
 
-load_dotenv()
+class Settings(BaseSettings):
+    SECRET_KEY: str = "replace-with-a-long-random-secret"  # change in production
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    DATABASE_URL: str = "sqlite:///./lexilearn.db"
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./lexilearn.db")
-SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "120"))
+settings = Settings()

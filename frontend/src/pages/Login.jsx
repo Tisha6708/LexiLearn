@@ -1,146 +1,118 @@
-// import { useState } from "react";
-// import API from "../services/api";
-// import { useNavigate } from "react-router-dom";
-
-// export default function Login() {
-//   const [email, setEmail] = useState("");
-//   const [password, setPassword] = useState("");
-//   const navigate = useNavigate();
-
-//   const handleLogin = async (e) => {
-//     e.preventDefault();
-//     try {
-//       const res = await API.post("/auth/login", { email, password });
-//       localStorage.setItem("token", res.data.access_token);
-//       alert("Login successful!");
-//       navigate("/dashboard");
-//     } catch (err) {
-//       alert("Invalid credentials!");
-//     }
-//   };
-
-//   return (
-//     <div className="flex justify-center items-center h-screen bg-blue-50">
-//       <form
-//         onSubmit={handleLogin}
-//         className="bg-white p-8 rounded-xl shadow-lg w-96"
-//       >
-//         <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
-//         <input
-//           type="email"
-//           placeholder="Email"
-//           className="border p-2 w-full mb-3 rounded"
-//           value={email}
-//           onChange={(e) => setEmail(e.target.value)}
-//         />
-//         <input
-//           type="password"
-//           placeholder="Password"
-//           className="border p-2 w-full mb-4 rounded"
-//           value={password}
-//           onChange={(e) => setPassword(e.target.value)}
-//         />
-//         <button className="bg-blue-600 text-white w-full py-2 rounded">
-//           Login
-//         </button>
-//       </form>
-//     </div>
-//   );
-// }
-
-
-import { useState } from "react";
-import API from "../services/api";
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { motion } from "framer-motion";
 
 export default function Login() {
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("student");
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
     try {
-      const res = await API.post("/auth/login", { email, password, role });
-      localStorage.setItem("token", res.data.access_token);
-      alert(`Login successful as ${role}!`);
-      navigate("/dashboard");
+      const user = await login({ email, password });
+
+      if (!user || !user.role) {
+        setError("Login failed: role missing in response");
+        return;
+      }
+
+      // ✅ Role-based redirect
+      if (user.role === "student") navigate("/student-dashboard");
+      else if (user.role === "teacher") navigate("/teacher-dashboard");
+      else if (user.role === "parent") navigate("/parent-dashboard");
+      else navigate("/");
     } catch (err) {
-      alert("Invalid credentials. Please try again.");
+      setError("Invalid credentials");
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-100 to-blue-300">
-      <form
-        onSubmit={handleLogin}
-        className="bg-white p-8 rounded-2xl shadow-2xl w-96"
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-200 via-blue-300 to-blue-400 relative overflow-hidden">
+      {/* Decorative background circles */}
+      <div className="absolute w-96 h-96 bg-blue-500 rounded-full blur-3xl opacity-20 top-10 left-10 animate-pulse"></div>
+      <div className="absolute w-80 h-80 bg-blue-700 rounded-full blur-3xl opacity-20 bottom-10 right-10 animate-pulse"></div>
+
+      <motion.form
+        onSubmit={onSubmit}
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="bg-white/80 backdrop-blur-md p-8 rounded-3xl shadow-2xl w-96 relative z-10"
       >
-        <h2 className="text-3xl font-bold text-blue-700 mb-6 text-center">
+        <h2 className="text-4xl font-extrabold text-blue-800 mb-6 text-center drop-shadow-sm">
           Welcome Back 👋
         </h2>
+        <p className="text-center text-gray-600 mb-8">
+          Sign in to continue your learning journey
+        </p>
 
-        {/* Role Selection */}
-        <div className="mb-4">
-          <label className="block text-left text-gray-700 font-medium mb-2">
-            Login as:
-          </label>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="border border-gray-300 p-2 rounded w-full focus:ring-2 focus:ring-blue-400"
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              placeholder="Enter your email"
+              className="border border-gray-300 p-3 w-full rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Password
+            </label>
+            <input
+              type="password"
+              placeholder="Enter your password"
+              className="border border-gray-300 p-3 w-full rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold text-lg shadow-md transition-all hover:shadow-xl"
           >
-            <option value="student">Student</option>
-            <option value="parent">Parent</option>
-            <option value="teacher">Teacher</option>
-          </select>
+            Log In
+          </button>
+
+          {error && (
+            <div className="text-red-600 text-center mt-3 font-medium bg-red-50 p-2 rounded-lg border border-red-200">
+              {error}
+            </div>
+          )}
         </div>
-
-        {/* Email Field */}
-        <input
-          type="email"
-          placeholder="Email"
-          className="border border-gray-300 p-2 w-full mb-3 rounded focus:ring-2 focus:ring-blue-400"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-
-        {/* Password Field */}
-        <input
-          type="password"
-          placeholder="Password"
-          className="border border-gray-300 p-2 w-full mb-4 rounded focus:ring-2 focus:ring-blue-400"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-
-        {/* Login Button */}
-        <button
-          type="submit"
-          className="bg-blue-600 hover:bg-blue-700 text-white w-full py-2 rounded-lg font-semibold transition"
-        >
-          Log In
-        </button>
 
         {/* Divider */}
-        <div className="my-4 text-center text-gray-500 text-sm">or</div>
+        <div className="my-6 text-center flex items-center justify-center">
+          <span className="h-px bg-gray-300 w-1/3"></span>
+          <span className="text-gray-500 text-sm mx-2">or</span>
+          <span className="h-px bg-gray-300 w-1/3"></span>
+        </div>
 
         {/* Signup Redirect */}
-        <div className="text-center">
-          <p className="text-gray-700">
-            New to LexiLearn?{" "}
-            <Link
-              to="/signup"
-              className="text-blue-600 font-semibold hover:underline"
-            >
-              Create an account
-            </Link>
-          </p>
+        <div className="text-center text-gray-700">
+          New to{" "}
+          <span className="font-semibold text-blue-700">LexiLearn</span>?{" "}
+          <Link
+            to="/signup"
+            className="text-blue-600 font-semibold hover:underline hover:text-blue-800 transition"
+          >
+            Create an account
+          </Link>
         </div>
-      </form>
+      </motion.form>
     </div>
   );
 }

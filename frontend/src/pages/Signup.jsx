@@ -1,199 +1,158 @@
-// import { useState } from "react";
-// import API from "../services/api";
-
-// export default function Signup() {
-//   const [form, setForm] = useState({
-//     full_name: "",
-//     email: "",
-//     password: "",
-//   });
-
-//   const handleChange = (e) => {
-//     setForm({ ...form, [e.target.name]: e.target.value });
-//   };
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     try {
-//       await API.post("/auth/signup", form);
-//       alert("Signup successful! You can now log in.");
-//     } catch (err) {
-//       alert("Signup failed!");
-//     }
-//   };
-
-//   return (
-//     <div className="flex justify-center items-center h-screen bg-blue-50">
-//       <form
-//         onSubmit={handleSubmit}
-//         className="bg-white p-8 rounded-xl shadow-lg w-96"
-//       >
-//         <h2 className="text-2xl font-bold mb-6 text-center">Sign Up</h2>
-//         <input
-//           type="text"
-//           name="full_name"
-//           placeholder="Full Name"
-//           className="border p-2 w-full mb-3 rounded"
-//           onChange={handleChange}
-//         />
-//         <input
-//           type="email"
-//           name="email"
-//           placeholder="Email"
-//           className="border p-2 w-full mb-3 rounded"
-//           onChange={handleChange}
-//         />
-//         <input
-//           type="password"
-//           name="password"
-//           placeholder="Password"
-//           className="border p-2 w-full mb-4 rounded"
-//           onChange={handleChange}
-//         />
-//         <button className="bg-blue-600 text-white w-full py-2 rounded">
-//           Sign Up
-//         </button>
-//       </form>
-//     </div>
-//   );
-// }
-
-
-import { useState } from "react";
-import API from "../services/api";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { useAuth } from "../context/AuthContext";
 
 export default function Signup() {
-  const [form, setForm] = useState({
-    full_name: "",
-    email: "",
-    password: "",
-    confirm_password: "",
-    role: "student",
-  });
-
+  const { signup } = useAuth();
+  const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("student");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    if (form.password !== form.confirm_password) {
-      alert("Passwords do not match!");
+    setError(null);
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match!");
       return;
     }
 
     try {
-      await API.post("/auth/signup", {
-        full_name: form.full_name,
-        email: form.email,
-        password: form.password,
-        role: form.role,
-      });
-      alert("Signup successful! You can now log in.");
-      navigate("/login");
+      await signup({ email, password, full_name: fullName, role });
+      navigate("/dashboard");
     } catch (err) {
-      alert("Signup failed. Please try again!");
+      setError(err?.response?.data?.detail || "Signup failed");
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-100 to-blue-300">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-2xl shadow-2xl w-96"
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-300 p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="bg-white shadow-2xl rounded-2xl p-8 w-full max-w-md"
       >
-        <h2 className="text-3xl font-bold text-blue-700 mb-6 text-center">
+        <h2 className="text-3xl font-bold text-center text-blue-700 mb-6">
           Create Your Account ✨
         </h2>
 
-        {/* Role Selection */}
-        <div className="mb-4">
-          <label className="block text-left text-gray-700 font-medium mb-2">
-            I am a:
-          </label>
-          <select
-            name="role"
-            value={form.role}
-            onChange={handleChange}
-            className="border border-gray-300 p-2 rounded w-full focus:ring-2 focus:ring-blue-400"
+        <form onSubmit={onSubmit} className="space-y-4">
+          {/* Full Name */}
+          <div>
+            <label className="block text-gray-700 mb-1 font-medium">
+              Full Name
+            </label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="John Doe"
+              required
+              className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+            />
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="block text-gray-700 mb-1 font-medium">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+              className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+            />
+          </div>
+
+          {/* Password */}
+          <div>
+            <label className="block text-gray-700 mb-1 font-medium">
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+            />
+          </div>
+
+          {/* Confirm Password */}
+          <div>
+            <label className="block text-gray-700 mb-1 font-medium">
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+            />
+          </div>
+
+          {/* Role */}
+          <div>
+            <label className="block text-gray-700 mb-1 font-medium">
+              I am a:
+            </label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+            >
+              <option value="student">Student</option>
+              <option value="parent">Parent</option>
+              <option value="teacher">Teacher</option>
+            </select>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-red-600 text-center text-sm"
+            >
+              {error}
+            </motion.div>
+          )}
+
+          {/* Submit Button */}
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold transition"
           >
-            <option value="student">Student</option>
-            <option value="parent">Parent</option>
-            <option value="teacher">Teacher</option>
-          </select>
-        </div>
-
-        {/* Full Name */}
-        <input
-          type="text"
-          name="full_name"
-          placeholder="Full Name"
-          className="border border-gray-300 p-2 w-full mb-3 rounded focus:ring-2 focus:ring-blue-400"
-          value={form.full_name}
-          onChange={handleChange}
-          required
-        />
-
-        {/* Email */}
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          className="border border-gray-300 p-2 w-full mb-3 rounded focus:ring-2 focus:ring-blue-400"
-          value={form.email}
-          onChange={handleChange}
-          required
-        />
-
-        {/* Password */}
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          className="border border-gray-300 p-2 w-full mb-3 rounded focus:ring-2 focus:ring-blue-400"
-          value={form.password}
-          onChange={handleChange}
-          required
-        />
-
-        {/* Confirm Password */}
-        <input
-          type="password"
-          name="confirm_password"
-          placeholder="Confirm Password"
-          className="border border-gray-300 p-2 w-full mb-4 rounded focus:ring-2 focus:ring-blue-400"
-          value={form.confirm_password}
-          onChange={handleChange}
-          required
-        />
-
-        {/* Signup Button */}
-        <button
-          type="submit"
-          className="bg-blue-600 hover:bg-blue-700 text-white w-full py-2 rounded-lg font-semibold transition"
-        >
-          Sign Up
-        </button>
+            Sign Up
+          </motion.button>
+        </form>
 
         {/* Divider */}
         <div className="my-4 text-center text-gray-500 text-sm">or</div>
 
-        {/* Login Redirect */}
-        <div className="text-center">
-          <p className="text-gray-700">
-            Already have an account?{" "}
-            <Link
-              to="/login"
-              className="text-blue-600 font-semibold hover:underline"
-            >
-              Log in here
-            </Link>
-          </p>
-        </div>
-      </form>
+        {/* Redirect to Login */}
+        <p className="text-center text-gray-700">
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            className="text-blue-600 font-semibold hover:underline"
+          >
+            Log in
+          </Link>
+        </p>
+      </motion.div>
     </div>
   );
 }

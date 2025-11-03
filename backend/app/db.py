@@ -1,12 +1,12 @@
-from sqlalchemy import create_engine, MetaData
-from databases import Database
-from app.config import DATABASE_URL
+from sqlmodel import create_engine, Session, SQLModel
+from .config import settings
 
-# Async database for FastAPI
-database = Database(DATABASE_URL)
-metadata = MetaData()
+engine = create_engine(settings.DATABASE_URL, echo=False, connect_args={"check_same_thread": False})
 
-# Synchronous engine for table creation
-engine = create_engine(
-    str(DATABASE_URL).replace("+aiosqlite", ""), connect_args={"check_same_thread": False}
-)
+def init_db():
+    from .models import User
+    SQLModel.metadata.create_all(engine)
+
+def get_session():
+    with Session(engine) as session:
+        yield session
