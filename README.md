@@ -7,13 +7,13 @@ Built with **React (Vite)** + **FastAPI** + **SQLModel**, LexiLearn provides stu
 
 TO RUN BACKEND
 
-run `cd backend` \n
-run `venv\Scripts\activate` \n
-run `pip install -r requirements.txt` \n
+run `cd backend` 
+run `venv\Scripts\activate` 
+run `pip install -r requirements.txt`
 run `uvicorn app.main:app --reload`
 
 TO RUN FRONTEND
 
-run `cd frontend` \n
-run `npm i` \n
+run `cd frontend` 
+run `npm i` 
 run `npm run dev`
