@@ -11,13 +11,15 @@ export default function Navbar() {
   const toggleMenu = () => setMenuOpen((prev) => !prev);
   const closeMenu = () => setMenuOpen(false);
 
-  // Role-based dashboard paths
-  const dashboardPath =
-    user?.role === "teacher"
+  // Dynamically determine base path per role
+  const roleBasePath =
+    user?.role === "student"
+      ? "/student"
+      : user?.role === "teacher"
       ? "/teacher"
       : user?.role === "parent"
       ? "/parent"
-      : "/dashboard";
+      : "";
 
   const handleLogout = () => {
     logout();
@@ -38,7 +40,6 @@ export default function Navbar() {
 
         {/* Navigation Links */}
         <div className="flex items-center gap-6">
-          {/* Common link for all users */}
           <Link to="/" className="text-gray-700 hover:text-blue-700 font-medium transition">
             Home
           </Link>
@@ -47,19 +48,19 @@ export default function Navbar() {
           {user?.role === "student" && (
             <>
               <Link
-                to="/lessons"
+                to={`${roleBasePath}/lessons`}
                 className="text-gray-700 hover:text-blue-700 font-medium transition"
               >
                 Lessons
               </Link>
               <Link
-                to="/practice"
+                to={`${roleBasePath}/practice`}
                 className="text-gray-700 hover:text-blue-700 font-medium transition"
               >
                 Practice
               </Link>
               <Link
-                to="/dashboard"
+                to={`${roleBasePath}/dashboard`}
                 className="text-gray-700 hover:text-blue-700 font-medium transition"
               >
                 Dashboard
@@ -70,7 +71,7 @@ export default function Navbar() {
           {/* Teacher Link */}
           {user?.role === "teacher" && (
             <Link
-              to="/teacher"
+              to={`${roleBasePath}`}
               className="text-gray-700 hover:text-blue-700 font-medium transition"
             >
               Teacher Dashboard
@@ -80,7 +81,7 @@ export default function Navbar() {
           {/* Parent Link */}
           {user?.role === "parent" && (
             <Link
-              to="/parent"
+              to={`${roleBasePath}`}
               className="text-gray-700 hover:text-blue-700 font-medium transition"
             >
               Parent Dashboard
@@ -139,7 +140,7 @@ export default function Navbar() {
 
                     <div className="flex flex-col">
                       <Link
-                        to={dashboardPath}
+                        to={`${roleBasePath}/dashboard`}
                         onClick={closeMenu}
                         className="px-4 py-2 text-sm hover:bg-blue-50 text-blue-700 transition"
                       >

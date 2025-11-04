@@ -18,26 +18,43 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("lexi_token"); // ✅ match your AuthContext key
     if (!token) {
       alert("Please login first!");
       window.location.href = "/login";
       return;
     }
 
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    setUser(payload);
+    // ✅ decode JWT safely
+    let payload = null;
+    try {
+      payload = JSON.parse(atob(token.split(".")[1]));
+      setUser(payload);
+    } catch (e) {
+      console.error("Invalid token:", e);
+      window.location.href = "/login";
+      return;
+    }
+
+    // ✅ use payload.sub as the user id
+    const userId = payload.sub;
+    if (!userId) {
+      console.error("Missing user ID in token payload");
+      setLoading(false);
+      return;
+    }
 
     const fetchSessions = async () => {
       try {
-        const res = await API.get(`/sessions/user/${payload.user_id}`);
-        setSessions(res.data.sessions);
+        const res = await API.get(`/sessions/user/${userId}`);
+        setSessions(res.data.sessions || []);
       } catch (err) {
         console.error("Error fetching sessions:", err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchSessions();
   }, []);
 
@@ -90,7 +107,7 @@ export default function Dashboard() {
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={sessions}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="lesson_id" label={{ value: "Lesson", position: "insideBottomRight", offset: -5 }} />
+              <XAxis dataKey="lesson_id" />
               <YAxis />
               <Tooltip />
               <Line type="monotone" dataKey="accuracy" stroke="#2563eb" />
@@ -105,7 +122,7 @@ export default function Dashboard() {
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={sessions}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="lesson_id" label={{ value: "Lesson", position: "insideBottomRight", offset: -5 }} />
+              <XAxis dataKey="lesson_id" />
               <YAxis />
               <Tooltip />
               <Bar dataKey="wpm" fill="#16a34a" />
