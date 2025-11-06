@@ -1,1 +1,36 @@
 @import "tailwindcss";
+
+/* ==============================
+   🧠 Dyslexia-Friendly Mode
+============================== */
+body.dyslexia-mode {
+  font-family: 'Atkinson Hyperlegible', 'OpenDyslexic', Arial, sans-serif;
+  background-color: #fffdf7;
+  color: #222;
+  letter-spacing: 0.05em;
+  line-height: 1.8;
+  transition: all 0.3s ease-in-out;
+}
+
+body.dyslexia-mode p,
+body.dyslexia-mode span,
+body.dyslexia-mode h1,
+body.dyslexia-mode h2,
+body.dyslexia-mode h3 {
+  color: #1e293b;
+}
+
+body.dyslexia-mode .spoken-highlight {
+  background-color: #fdd835;
+  color: #000;
+  border-radius: 6px;
+  padding: 2px 4px;
+}
+
+/* softer color palette */
+body.dyslexia-mode .bg-blue-600 {
+  background-color: #4f9ef8;
+}
+body.dyslexia-mode .text-blue-600 {
+  color: #2563eb;
+}
