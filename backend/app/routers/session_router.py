@@ -74,6 +74,7 @@ from app.db import get_session
 from app.models import ReadingSession, Lesson
 from app.ai_utils import calculate_accuracy
 
+
 router = APIRouter(prefix="/sessions", tags=["Reading Sessions"])
 
 # ---------- START READING SESSION ----------

@@ -22,7 +22,7 @@ export default function Login() {
       }
 
       // ✅ Role-based redirect
-      if (user.role === "student") navigate("/student-dashboard");
+      if (user.role === "student") navigate("student/lessons");
       else if (user.role === "teacher") navigate("/teacher-dashboard");
       else if (user.role === "parent") navigate("/parent-dashboard");
       else navigate("/");
