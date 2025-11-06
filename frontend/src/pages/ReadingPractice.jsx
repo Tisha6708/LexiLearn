@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import API from "../services/api";
 
@@ -17,10 +17,12 @@ export default function ReadingPractice() {
   const recognitionRef = useRef(null);
   const startTimeRef = useRef(null);
   const stopTimeRef = useRef(null);
+  const debounceRef = useRef(null);
 
-  // --- utility helpers ---
+  // --- Utility Helpers ---
   const normalize = (w) =>
-    w.replace(/[\u2018\u2019\u201C\u201D"'(){}\[\],.!?:;—–<>\/\\]/g, "")
+    w
+      .replace(/[\u2018\u2019\u201C\u201D"'(){}\[\],.!?:;—–<>\/\\]/g, "")
       .trim()
       .toLowerCase();
 
@@ -55,7 +57,7 @@ export default function ReadingPractice() {
     return dist <= threshold;
   };
 
-  const computeHighlights = (expectedText, spokenText) => {
+  const computeHighlights = useCallback((expectedText, spokenText) => {
     const expected = expectedText.split(/\s+/).map(normalize).filter(Boolean);
     const spoken = spokenText.split(/\s+/).map(normalize).filter(Boolean);
     const spokenUsed = new Array(spoken.length).fill(false);
@@ -79,9 +81,9 @@ export default function ReadingPractice() {
       }
       return { word: expWord, color: "gray" };
     });
-  };
+  }, []);
 
-  const computeResultMetrics = (highlightsArr) => {
+  const computeResultMetrics = (highlightsArr, spokenText) => {
     const total = highlightsArr.length;
     const correct = highlightsArr.filter((h) => h.color === "green").length;
     const near = highlightsArr.filter((h) => h.color === "orange").length;
@@ -90,13 +92,13 @@ export default function ReadingPractice() {
     const start = startTimeRef.current;
     const end = stopTimeRef.current || Date.now();
     const minutes = Math.max((end - start) / 60000, 1 / 60);
-    const spokenCount = finalTranscript.split(/\s+/).filter(Boolean).length;
+    const spokenCount = spokenText.split(/\s+/).filter(Boolean).length;
     const wpm = Math.round(spokenCount / minutes);
 
-    return { total, correct, near, accuracy, wpm };
+    return { accuracy, wpm };
   };
 
-  // --- fetch lesson ---
+  // --- Fetch Lesson ---
   useEffect(() => {
     if (!lessonId) return;
     const fetchLesson = async () => {
@@ -111,7 +113,7 @@ export default function ReadingPractice() {
     fetchLesson();
   }, [lessonId]);
 
-  // --- initialize SpeechRecognition once ---
+  // --- Initialize SpeechRecognition Once ---
   useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -129,58 +131,72 @@ export default function ReadingPractice() {
     recognition.onresult = (event) => {
       let interim = "";
       let final = "";
-
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const res = event.results[i];
         if (res.isFinal) final += res[0].transcript + " ";
         else interim += res[0].transcript + " ";
       }
 
-      const combined = (finalTranscript + " " + final + interim).trim();
-      setTranscript(combined);
+      const newTranscript = finalTranscript + " " + final + interim;
 
-      if (lesson?.content && combined) {
-        const h = computeHighlights(lesson.content, combined);
-        setHighlights(h);
-      }
+      // Debounce highlight updates to reduce lag
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        if (lesson?.content && newTranscript) {
+          const h = computeHighlights(lesson.content, newTranscript);
+          setHighlights(h);
+        }
+      }, 300);
 
       if (final) {
         setFinalTranscript((prev) => (prev + " " + final).trim());
       }
+
+      setTranscript(newTranscript.trim());
     };
 
     recognition.onerror = (e) => {
       console.error("Speech recognition error:", e);
-      if (e.error === "network") {
-        setError("⚠️ Speech recognition requires internet and HTTPS. Please check your connection.");
-      } else if (e.error === "not-allowed") {
-        setError("🎤 Microphone access denied. Please allow microphone permission.");
-      } else if (e.error === "no-speech") {
-        setError("No speech detected. Try again.");
-      } else {
-        setError("Speech recognition error: " + (e.error || "unknown"));
-      }
+      const messages = {
+        network: "⚠️ Speech recognition requires internet and HTTPS.",
+        "not-allowed": "🎤 Microphone access denied.",
+        "no-speech": "No speech detected. Try again.",
+      };
+      setError(messages[e.error] || "Speech recognition error occurred.");
     };
-
 
     recognition.onend = () => {
       console.log("Speech recognition stopped.");
       setListening(false);
       stopTimeRef.current = Date.now();
 
-      if (lesson?.content) {
-        const h = computeHighlights(lesson.content, finalTranscript || transcript);
-        setHighlights(h);
-        setResult(computeResultMetrics(h));
-      }
+      // Delay slightly to ensure all speech results are finalized
+      setTimeout(() => {
+        const combinedText = (finalTranscript || "") + " " + (transcript || "");
+        const cleanCombined = combinedText.trim();
+
+        if (lesson?.content && cleanCombined) {
+          const h = computeHighlights(lesson.content, cleanCombined);
+          setHighlights(h);
+          setResult(computeResultMetrics(h, cleanCombined));
+        } else {
+          setResult({ accuracy: 0, wpm: 0 });
+        }
+      }, 400); // short delay to ensure final transcript update
     };
 
+
     recognitionRef.current = recognition;
+    return () => {
+      try {
+        recognition.stop();
+      } catch (err) {
+        console.warn("Recognition stop error:", err);
+      }
+    };
+  }, [lesson, computeHighlights]);
 
-    return () => recognition.stop();
-  }, [lesson, finalTranscript, transcript]);
-
-  // --- controls ---
+  // --- Controls ---
   const startListening = () => {
     const recognition = recognitionRef.current;
     if (!recognition) return setError("SpeechRecognition not supported.");
@@ -188,7 +204,6 @@ export default function ReadingPractice() {
 
     setTranscript("");
     setFinalTranscript("");
-    setHighlights([]);
     setResult(null);
     setError(null);
 
@@ -221,10 +236,20 @@ export default function ReadingPractice() {
     setError(null);
   };
 
+  const decodeJWT = (token) => {
+    try {
+      const base64Url = token.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      return JSON.parse(atob(base64));
+    } catch {
+      return null;
+    }
+  };
+
   const submitSession = async () => {
     try {
       const rawToken = localStorage.getItem("lexi_token");
-      const payloadUser = rawToken ? JSON.parse(atob(rawToken.split(".")[1])) : null;
+      const payloadUser = decodeJWT(rawToken);
       const userId = payloadUser?.sub || payloadUser?.id;
 
       const sessionPayload = {
@@ -234,8 +259,6 @@ export default function ReadingPractice() {
       };
 
       const res = await API.post("/sessions/", sessionPayload);
-
-      // get backend metrics (with ML results)
       const backendMetrics = res.data.metrics;
 
       setResult({
@@ -245,6 +268,7 @@ export default function ReadingPractice() {
         feedback: backendMetrics.recommendations || "Keep practicing!",
       });
 
+
       alert("✅ Session analyzed successfully!");
     } catch (err) {
       console.error("Error submitting session:", err);
@@ -252,15 +276,10 @@ export default function ReadingPractice() {
     }
   };
 
-
-  // --- render ---
+  // --- Render ---
   if (!lessonId) return <p className="text-center mt-10">No lesson selected.</p>;
   if (error)
-    return (
-      <p className="text-center mt-10 text-red-600">
-        {error}
-      </p>
-    );
+    return <p className="text-center mt-10 text-red-600">{error}</p>;
   if (!lesson) return <p className="text-center mt-10">Loading lesson...</p>;
 
   return (
@@ -312,7 +331,10 @@ export default function ReadingPractice() {
           ⏹️ Stop
         </button>
 
-        <button onClick={resetSession} className="px-4 py-2 rounded hover:bg-black hover:text-white border">
+        <button
+          onClick={resetSession}
+          className="px-4 py-2 rounded hover:bg-black hover:text-white border"
+        >
           Reset
         </button>
 
@@ -336,11 +358,12 @@ export default function ReadingPractice() {
         </div>
       </div>
 
-      {/* Result box */}
+      {/* Results */}
       {result && (
         <div className="mt-6 bg-white shadow rounded-lg p-4">
-          <h4 className="text-lg font-semibold mb-2 text-blue-600">Your Results (AI Analysis)</h4>
-
+          <h4 className="text-lg font-semibold mb-2 text-blue-600">
+            Your Results (AI Analysis)
+          </h4>
           <p>🎯 Accuracy: <strong>{result.accuracy}%</strong></p>
           <p>⚡ Words Per Minute: <strong>{result.wpm}</strong></p>
 
@@ -350,13 +373,6 @@ export default function ReadingPractice() {
             </p>
           )}
 
-          {result.performance && (
-            <p className="mt-2 text-green-700 font-semibold">
-              🌟 Performance: {result.performance}
-            </p>
-          )}
-          
-
           {result.feedback && (
             <p className="mt-3 text-blue-700 font-medium">
               💬 Feedback: {result.feedback}
@@ -364,7 +380,6 @@ export default function ReadingPractice() {
           )}
         </div>
       )}
-
     </div>
   );
 }
