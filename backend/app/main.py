@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .db import init_db
-from .routers import auth_router, user_router, lesson_router, session_router
+from app.routers import auth_router, user_router, lesson_router, session_router , chatbot_router
 
 app = FastAPI(title="LexiLearn API")
 
@@ -27,6 +27,7 @@ app.include_router(auth_router.router)
 app.include_router(user_router.router)
 app.include_router(lesson_router.router)
 app.include_router(session_router.router)
+app.include_router(chatbot_router.router)
 
 @app.get("/health")
 def health():

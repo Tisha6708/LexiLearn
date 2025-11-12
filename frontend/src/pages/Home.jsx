@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
 import { ArrowRight, BookOpen, Brain, Mic } from "lucide-react";
 import { Link } from "react-router-dom";
+import Chatbot from "../components/ChatBot";
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-blue-100 flex flex-col items-center text-center overflow-x-hidden">
-      
+
       {/* Hero Section */}
       <section className="max-w-4xl mt-20 px-6">
         <motion.h1
@@ -14,7 +15,7 @@ export default function Home() {
           transition={{ duration: 0.6 }}
           className="text-6xl font-extrabold text-blue-800 mb-4 leading-tight"
         >
-          Read. Speak. Grow.  
+          Read. Speak. Grow.
           <span className="block text-blue-500">With LexiLearn.</span>
         </motion.h1>
 
@@ -76,7 +77,7 @@ export default function Home() {
       <section className="mt-28 max-w-5xl px-6">
         <h2 className="text-4xl font-bold text-blue-700 mb-6">Why LexiLearn?</h2>
         <p className="text-lg text-gray-700 mb-10">
-          LexiLearn isn’t just another learning platform — it’s an **inclusive AI companion** designed to empower every learner, especially those who struggle with reading.  
+          LexiLearn isn’t just another learning platform — it’s an **inclusive AI companion** designed to empower every learner, especially those who struggle with reading.
           Our dyslexia-friendly design ensures visual comfort, gentle feedback, and positive reinforcement.
         </p>
 
@@ -99,11 +100,12 @@ export default function Home() {
       {/* Quote / Impact Section */}
       <section className="mt-24 max-w-3xl mb-20">
         <blockquote className="text-2xl italic text-gray-700">
-          “For many learners, reading isn’t just a skill — it’s a challenge.  
+          “For many learners, reading isn’t just a skill — it’s a challenge.
           LexiLearn turns that challenge into progress, one word at a time.”
         </blockquote>
         <p className="mt-4 text-gray-500">— The LexiLearn Team</p>
       </section>
+      <Chatbot/>
     </div>
   );
 }
