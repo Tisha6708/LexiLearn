@@ -40,7 +40,22 @@ export default function Chatbot() {
 
         try {
             const context = getChatContext();
-            const fullPrompt = `${context}\nuser: ${text}`;
+            const fullPrompt = `
+                You are LexiLearn's dyslexia-friendly AI helper.
+                Keep every reply:
+                - under 30 words,
+                - simple vocabulary,
+                - short sentences,
+                - clear formatting,
+                - no long paragraphs,
+                - supportive and friendly.
+
+                Context:
+                ${context}
+
+                User: ${text}
+                Reply in dyslexia-friendly style:
+                `;
 
             const resp = await fetch("http://127.0.0.1:8000/chatbot", {
                 method: "POST",
