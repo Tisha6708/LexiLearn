@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import API from "../services/api";
 
 export default function ReadingPractice() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const lessonId = searchParams.get("lessonId");
 
   const [lesson, setLesson] = useState(null);
@@ -166,24 +167,24 @@ export default function ReadingPractice() {
     };
 
     recognition.onend = () => {
-      console.log("Speech recognition stopped.");
-      setListening(false);
-      stopTimeRef.current = Date.now();
+  console.log("Speech recognition stopped.");
+  setListening(false);
+  stopTimeRef.current = Date.now();
 
-      // Delay slightly to ensure all speech results are finalized
-      setTimeout(() => {
-        const combinedText = (finalTranscript || "") + " " + (transcript || "");
-        const cleanCombined = combinedText.trim();
+  setTimeout(() => {
+    const combinedText = (finalTranscript || "") + " " + (transcript || "");
+    const cleanCombined = combinedText.trim();
 
-        if (lesson?.content && cleanCombined) {
-          const h = computeHighlights(lesson.content, cleanCombined);
-          setHighlights(h);
-          setResult(computeResultMetrics(h, cleanCombined));
-        } else {
-          setResult({ accuracy: 0, wpm: 0 });
-        }
-      }, 400); // short delay to ensure final transcript update
-    };
+    if (lesson?.content && cleanCombined) {
+      const h = computeHighlights(lesson.content, cleanCombined);
+      setHighlights(h);
+      // 🧠 Frontend no longer computes accuracy/WPM.
+      // Backend will handle analysis on submit.
+    }
+    // ❌ REMOVE setResult({ accuracy: 0, wpm: 0 });
+  }, 400);
+};
+
 
 
     recognitionRef.current = recognition;
@@ -247,34 +248,50 @@ export default function ReadingPractice() {
   };
 
   const submitSession = async () => {
-    try {
-      const rawToken = localStorage.getItem("lexi_token");
-      const payloadUser = decodeJWT(rawToken);
-      const userId = payloadUser?.sub || payloadUser?.id;
+  try {
+    const rawToken = localStorage.getItem("lexi_token");
+    const payloadUser = decodeJWT(rawToken);
+    const userId = payloadUser?.sub || payloadUser?.id;
 
-      const sessionPayload = {
-        user_id: userId,
-        lesson_id: lessonId,
-        spoken_text: finalTranscript || transcript,
-      };
+    const combinedText =
+      ((finalTranscript || "") + " " + (transcript || "")).trim();
 
-      const res = await API.post("/sessions/", sessionPayload);
-      const backendMetrics = res.data.metrics;
-
-      setResult({
-        accuracy: backendMetrics.accuracy,
-        wpm: backendMetrics.wpm,
-        errors: backendMetrics.errors || [],
-        feedback: backendMetrics.recommendations || "Keep practicing!",
-      });
-
-
-      alert("✅ Session analyzed successfully!");
-    } catch (err) {
-      console.error("Error submitting session:", err);
-      alert("❌ Failed to submit session. Check console for details.");
+    if (!combinedText) {
+      alert("No speech captured. Please read the passage first.");
+      return;
     }
-  };
+
+    console.log("🧠 SENT TEXT:", combinedText);
+
+    const sessionPayload = {
+      user_id: userId,
+      lesson_id: lessonId,
+      spoken_text: combinedText,
+    };
+
+    const res = await API.post("/sessions/", sessionPayload);
+
+    console.log("✅ Backend response:", res.data);
+
+    const backendMetrics = res.data?.metrics || res.data || {};
+
+    setResult({
+      accuracy: backendMetrics.accuracy ?? 0,
+      wpm: backendMetrics.wpm ?? 0,
+      errors: backendMetrics.errors ?? [],
+      feedback:
+        backendMetrics.recommendations ||
+        backendMetrics.feedback ||
+        "Keep practicing!",
+    });
+
+    alert("✅ Session analyzed successfully!");
+  } catch (err) {
+    console.error("❌ Submit failed:", err);
+    alert("❌ Failed to submit session. Check console.");
+  }
+};
+
 
   // --- Render ---
   if (!lessonId) return <p className="text-center mt-10">No lesson selected.</p>;
@@ -283,25 +300,38 @@ export default function ReadingPractice() {
   if (!lesson) return <p className="text-center mt-10">Loading lesson...</p>;
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h2 className="text-2xl font-bold text-blue-600 mb-4">{lesson.title}</h2>
+  <div className="min-h-screen bg-[#f7f4ed] flex justify-center p-6">
+    <div className="w-full max-w-4xl bg-[#fffdf8] rounded-3xl shadow-xl p-8 border border-gray-200">
 
-      {/* Lesson content with live highlights */}
-      <div className="prose mb-4 leading-8">
+      <h2 className="text-3xl font-bold text-blue-700 mb-6 text-center tracking-wide">
+        {lesson.title}
+      </h2>
+
+      {/* ✅ Dyslexia-Friendly Reading Area */}
+      <div
+        className="rounded-xl bg-[#faf7f2] p-6 mb-6"
+        style={{
+          fontFamily: "Arial, sans-serif",
+          fontSize: "1.8rem",
+          lineHeight: "2.6rem",
+          letterSpacing: "0.05em",
+        }}
+      >
         {highlights.length > 0 ? (
           <div>
             {highlights.map((h, i) => (
               <span
                 key={i}
-                className="mr-1 inline-block px-0.5 py-0.5 rounded"
+                className="inline-block px-2 py-1 rounded-md mr-1 mb-1 transition-all"
                 style={{
-                  color:
+                  background:
                     h.color === "green"
-                      ? "#166534"
+                      ? "#bbf7d0"
                       : h.color === "orange"
-                        ? "#b45309"
-                        : "#6b7280",
-                  fontWeight: h.color === "green" ? 700 : 600,
+                        ? "#fde68a"
+                        : "#f1f5f9",
+                  color: "#1f2933",
+                  fontWeight: h.color !== "gray" ? 700 : 500,
                 }}
               >
                 {h.word}
@@ -309,16 +339,18 @@ export default function ReadingPractice() {
             ))}
           </div>
         ) : (
-          <p className="text-gray-700 whitespace-pre-line">{lesson.content}</p>
+          <p className="text-gray-800 whitespace-pre-line">
+            {lesson.content}
+          </p>
         )}
       </div>
 
-      {/* Controls */}
-      <div className="mb-4 flex items-center gap-3">
+      {/* ✅ Large High-Contrast Controls */}
+      <div className="flex flex-wrap gap-4 justify-center mb-6">
         <button
           onClick={startListening}
           disabled={listening}
-          className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-400 disabled:opacity-50"
+          className="px-8 py-4 rounded-xl bg-blue-700 text-white text-lg font-bold hover:bg-blue-500 disabled:opacity-50"
         >
           🎙️ Start Reading
         </button>
@@ -326,60 +358,84 @@ export default function ReadingPractice() {
         <button
           onClick={stopListening}
           disabled={!listening}
-          className="px-4 py-2 rounded bg-red-600 hover:bg-red-400 text-white disabled:opacity-50"
+          className="px-8 py-4 rounded-xl bg-red-700 text-white text-lg font-bold hover:bg-red-500 disabled:opacity-50"
         >
           ⏹️ Stop
         </button>
 
         <button
           onClick={resetSession}
-          className="px-4 py-2 rounded hover:bg-black hover:text-white border"
+          className="px-8 py-4 rounded-xl bg-gray-800 text-white text-lg font-bold hover:bg-black"
         >
           Reset
         </button>
 
         <button
           onClick={submitSession}
-          className="ml-auto px-4 py-2 rounded bg-green-600 text-white"
+          className="px-8 py-4 rounded-xl bg-green-700 text-white text-lg font-bold hover:bg-green-500"
         >
-          Submit Practice
+          ✅ Submit
         </button>
       </div>
 
       {listening && (
-        <div className="text-green-600 font-medium mb-3">🎤 Listening...</div>
+        <div className="text-center text-green-700 font-bold text-lg mb-4">
+          🎤 Listening...
+        </div>
       )}
 
-      {/* Live transcript */}
-      <div className="mt-3 bg-gray-50 p-3 rounded">
-        <div className="text-sm text-gray-500">Live transcript:</div>
-        <div className="mt-1 text-sm text-gray-800 min-h-[2rem]">
-          {transcript || "(say something...)"}
+      {/* ✅ Large Live Transcript */}
+      <div className="bg-gray-100 p-4 rounded-xl">
+        <div className="text-sm text-gray-600 mb-1">Live transcript</div>
+        <div
+          className="text-gray-900"
+          style={{
+            fontFamily: "OpenDyslexic, Arial, sans-serif",
+            fontSize: "1.2rem",
+            lineHeight: "2rem",
+          }}
+        >
+          {transcript || "(Speak to begin)"}
         </div>
       </div>
 
-      {/* Results */}
+      {/* ✅ Results */}
       {result && (
-        <div className="mt-6 bg-white shadow rounded-lg p-4">
-          <h4 className="text-lg font-semibold mb-2 text-blue-600">
-            Your Results (AI Analysis)
-          </h4>
-          <p>🎯 Accuracy: <strong>{result.accuracy}%</strong></p>
-          <p>⚡ Words Per Minute: <strong>{result.wpm}</strong></p>
+  <div className="mt-6 bg-white shadow rounded-xl p-6 border">
+    <h4 className="text-2xl font-bold mb-3 text-blue-700">
+      Your Reading Analysis
+    </h4>
 
-          {result.errors?.length > 0 && (
-            <p className="text-sm text-red-600 mt-2">
-              Missing or skipped words: {result.errors.join(", ")}
-            </p>
-          )}
+    <p className="text-lg mb-1">
+      🎯 Accuracy: <strong>{result.accuracy}%</strong>
+    </p>
+    <p className="text-lg mb-1">
+      ⚡ WPM: <strong>{result.wpm}</strong>
+    </p>
 
-          {result.feedback && (
-            <p className="mt-3 text-blue-700 font-medium">
-              💬 Feedback: {result.feedback}
-            </p>
-          )}
-        </div>
-      )}
+    {result.errors?.length > 0 && (
+      <p className="text-red-600 mt-2">
+        Skipped words: {result.errors.join(", ")}
+      </p>
+    )}
+
+    {result.feedback && (
+      <p className="mt-3 text-green-800 font-semibold">
+        💬 {result.feedback}
+      </p>
+    )}
+
+    {/* ✅ EXIT BUTTON */}
+    <button
+      onClick={() => navigate("/student/lessons")}
+      className="mt-6 w-full px-6 py-3 rounded-xl bg-purple-700 text-white text-lg font-bold hover:bg-purple-500"
+    >
+      ⬅️ Back to Lessons
+    </button>
+  </div>
+)}
+
     </div>
-  );
+  </div>
+);
 }

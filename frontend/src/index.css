@@ -4,7 +4,7 @@
    🧠 Dyslexia-Friendly Mode
 ============================== */
 body.dyslexia-mode {
-  /* font-family: 'Atkinson Hyperlegible', 'OpenDyslexic', Arial, sans-serif; */
+  font-family: 'Atkinson Hyperlegible', 'OpenDyslexic', Arial, sans-serif;
   background-color: #fffdf7;
   color: #222;
   letter-spacing: 0.05em;

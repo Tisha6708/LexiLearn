@@ -9,6 +9,7 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import ParentDashboard from "./pages/ParentDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
+import TeacherProgress from "./pages/TeacherProgress";
 import ReadingPractice from "./pages/ReadingPractice";
 import Lessons from "./pages/Lessons";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -20,12 +21,12 @@ function App() {
         <Navbar />
         <main>
           <Routes>
-            {/* Public Routes */}
+            {/* ✅ Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
 
-            {/* Student Routes */}
+            {/* ✅ Student Routes */}
             <Route
               path="/student/dashboard"
               element={
@@ -51,7 +52,7 @@ function App() {
               }
             />
 
-            {/* Parent Route */}
+            {/* ✅ Parent Route */}
             <Route
               path="/parent"
               element={
@@ -61,15 +62,25 @@ function App() {
               }
             />
 
-            {/* Teacher Route */}
-            <Route
-              path="/teacher"
-              element={
-                <ProtectedRoute roles={["teacher"]}>
-                  <TeacherDashboard />
-                </ProtectedRoute>
-              }
-            />
+           {/* ✅ Teacher Routes (KEEP /teacher as base) */}
+<Route
+  path="/teacher"
+  element={
+    <ProtectedRoute roles={["teacher"]}>
+      <TeacherDashboard />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/teacher/progress"
+  element={
+    <ProtectedRoute roles={["teacher"]}>
+      <TeacherProgress />
+    </ProtectedRoute>
+  }
+/>
+
           </Routes>
         </main>
       </Router>

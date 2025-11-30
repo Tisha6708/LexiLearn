@@ -77,6 +77,12 @@ from app.ai_utils import calculate_accuracy
 
 router = APIRouter(prefix="/sessions", tags=["Reading Sessions"])
 
+# ---------- GET ALL SESSIONS (FOR TEACHER DASHBOARD) ----------
+@router.get("/")
+def get_all_sessions(session: Session = Depends(get_session)):
+    sessions = session.exec(select(ReadingSession)).all()
+    return {"sessions": sessions}
+
 # ---------- START READING SESSION ----------
 @router.post("/", status_code=201)
 def start_reading_session(data: dict, session: Session = Depends(get_session)):
@@ -113,6 +119,8 @@ def start_reading_session(data: dict, session: Session = Depends(get_session)):
             "wpm": wpm,
             "accuracy": analysis["accuracy"],
             "errors": analysis["errors"],
+            "recommendations": analysis["recommendations"]
+
         },
     }
 
@@ -129,3 +137,5 @@ def get_session(session_id: int, session: Session = Depends(get_session)):
     if not sess:
         raise HTTPException(status_code=404, detail="Session not found")
     return {"session": sess}
+
+

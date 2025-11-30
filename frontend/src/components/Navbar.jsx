@@ -37,39 +37,39 @@ export default function Navbar() {
     user?.role === "student"
       ? "/student"
       : user?.role === "teacher"
-        ? "/teacher"
-        : user?.role === "parent"
-          ? "/parent"
-          : "";
+      ? "/teacher"
+      : user?.role === "parent"
+      ? "/parent"
+      : "";
 
-  // 🎯 Dynamic navigation links based on role
+  // ✅ FIXED: Proper role-based navbar links
   const getNavLinks = () => {
     if (!user) {
-      return [
-        { to: "/", label: "Home" },
-        { to: "/about", label: "About" },
-      ];
+      return [{ to: "/" }];
     }
 
     switch (user.role) {
       case "student":
         return [
+          { to: "/", label: "Home" },
           { to: `${roleBasePath}/lessons`, label: "Lessons" },
-          { to: `${roleBasePath}/practice`, label: "Practice" },
           { to: `${roleBasePath}/dashboard`, label: "Dashboard" },
         ];
+
       case "teacher":
         return [
-          { to: `${roleBasePath}/students`, label: "Students" },
-          { to: `${roleBasePath}/lessons`, label: "Lessons" },
-          { to: `${roleBasePath}/dashboard`, label: "Dashboard" },
+          { to: "/", label: "Home" },
+          { to: `${roleBasePath}`, label: "Dashboard" }, // ✅ /teacher
+          { to: `${roleBasePath}/progress`, label: "Student Progress" }, // ✅ /teacher/progress
         ];
+
       case "parent":
         return [
           { to: `${roleBasePath}/progress`, label: "Child Progress" },
           { to: `${roleBasePath}/reports`, label: "Reports" },
           { to: `${roleBasePath}/dashboard`, label: "Dashboard" },
         ];
+
       default:
         return [{ to: "/", label: "Home" }];
     }
@@ -88,7 +88,7 @@ export default function Navbar() {
           LexiLearn
         </Link>
 
-        {/* Dynamic Navigation Links */}
+        {/* ✅ Dynamic Navigation Links */}
         <div className="flex items-center gap-6">
           {navLinks.map((link) => (
             <Link
@@ -107,10 +107,11 @@ export default function Navbar() {
           {/* 🧠 Dyslexia Mode Toggle */}
           <button
             onClick={toggleDyslexiaMode}
-            className={`px-3 py-1 rounded-lg font-medium shadow-sm transition ${dyslexiaMode
+            className={`px-3 py-1 rounded-lg font-medium shadow-sm transition ${
+              dyslexiaMode
                 ? "bg-blue-600 text-white hover:bg-blue-700"
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
+            }`}
           >
             {dyslexiaMode ? "Reading Mode On" : "Reading Mode"}
           </button>
@@ -161,13 +162,19 @@ export default function Navbar() {
                     </div>
 
                     <div className="flex flex-col">
+                      {/* ✅ FIXED DASHBOARD LINK */}
                       <Link
-                        to={`${roleBasePath}/dashboard`}
+                        to={
+                          user.role === "teacher"
+                            ? "/teacher"
+                            : `${roleBasePath}/dashboard`
+                        }
                         onClick={closeMenu}
                         className="px-4 py-2 text-sm hover:bg-blue-50 text-blue-700 transition"
                       >
                         Go to Dashboard
                       </Link>
+
                       <button
                         onClick={handleLogout}
                         className="px-4 py-2 text-sm text-left text-red-600 hover:bg-red-50 transition"
